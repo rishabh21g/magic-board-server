@@ -79,6 +79,37 @@ func (h *Handler) handleClaimBlock(payload json.RawMessage) {
 		h.sendRateLimitExceeded(data.UserID)
 		return
 	}
+
+	// upsert user profile
+	if err := h.store.UpsertUserProfile(ctx, data.UserID, data.Username, data.Color); err != nil {
+		log.Printf("Failed to upsert user profile: %v", err)
+		return
+	}
+	h.broadcastUserProfileUpdated(data.UserID, &domain.UserProfile{
+		Username: data.Username,
+		Color:    data.Color,
+	})
+	owner, err := h.store.GetOwner(ctx, data.BlockID)
+	if err != nil {
+		log.Printf("Failed to get block owner: %v", err)
+		return
+	}
+
+	if owner != "" {
+		ok, err := h.store.UnclaimBlock(ctx, data.BlockID)
+		if err != nil || !ok {
+			log.Printf("Failed to unclaim block: ok=%v err=%v", ok, err)
+			return
+		}
+
+		h.broadcastBlockUpdate(&domain.Block{
+			BlockID: data.BlockID,
+			OwnerID: "",
+		})
+		h.broadcastLeaderboard()
+		return
+	}
+
 	block, err := h.gameService.ClaimBlock(ctx, data.BlockID, data.UserID)
 	if err != nil {
 		log.Printf("Failed to claim block: %v", err)
@@ -124,16 +155,42 @@ func (h *Handler) sendRateLimitExceeded(userID string) {
 func (h *Handler) getInitialGridState(c *Client) {
 	var ctx = context.Background()
 	grid, err := h.store.GetAllBlocks(ctx)
-	leaderboard, err := h.store.GetLeaderBoard(ctx)
 	if err != nil {
 		log.Printf("Failed to get grid state: %v", err)
 		return
 	}
+
+	leaderboard, err := h.store.GetLeaderBoard(ctx)
+	if err != nil {
+		log.Printf("Failed to get leaderboard: %v", err)
+		return
+	}
+
+	userIDs := make([]string, 0)
+	seen := make(map[string]struct{})
+	for _, b := range grid {
+		if b.OwnerID == "" {
+			continue
+		}
+		if _, ok := seen[b.OwnerID]; ok {
+			continue
+		}
+		seen[b.OwnerID] = struct{}{}
+		userIDs = append(userIDs, b.OwnerID)
+	}
+
+	users, err := h.store.GetUserProfiles(ctx, userIDs)
+	if err != nil {
+		log.Printf("Failed to get user profiles: %v", err)
+		return
+	}
+
 	response := map[string]interface{}{
 		"type": "INIT_STATE",
 		"payload": map[string]interface{}{
 			"grid":        grid,
 			"leaderboard": leaderboard,
+			"users":       users,
 		},
 	}
 	msg, err := json.Marshal(response)
@@ -159,6 +216,24 @@ func (h *Handler) broadcastLeaderboard() {
 	msg, err := json.Marshal(response)
 	if err != nil {
 		log.Printf("Failed to marshal leaderboard response: %v", err)
+		return
+	}
+	h.hub.broadcast <- msg
+}
+
+// broadcastUserProfileUpdated broadcasts a user profile update to all connected clients when a user updates their profile
+func (h *Handler) broadcastUserProfileUpdated(userID string, profile *domain.UserProfile) {
+	response := map[string]interface{}{
+		"type": "USER_PROFILE_UPDATED",
+		"payload": map[string]interface{}{
+			"userID":   userID,
+			"username": profile.Username,
+			"color":    profile.Color,
+		},
+	}
+	msg, err := json.Marshal(response)
+	if err != nil {
+		log.Printf("Failed to marshal user profile update: %v", err)
 		return
 	}
 	h.hub.broadcast <- msg

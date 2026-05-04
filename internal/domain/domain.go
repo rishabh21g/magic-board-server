@@ -1,11 +1,12 @@
 package domain
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 type Block struct {
-	BlockID   string `json:"blockID"`
-	OwnerID   string `json:"userID"`
-	Timestamp int64  `json:"timestamp"`
+	BlockID string `json:"blockID"`
+	OwnerID string `json:"userID"`
 }
 
 type LeaderboardEntry struct {
@@ -16,4 +17,9 @@ type LeaderboardEntry struct {
 type Message struct {
 	Type    string          `json:"type"`
 	Payload json.RawMessage `json:"payload"`
+}
+
+type UserProfile struct {
+	Username string `json:"username"`
+	Color    string `json:"color"`
 }

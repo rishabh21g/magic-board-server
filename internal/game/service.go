@@ -3,7 +3,6 @@ package game
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/rishabh21g/magic-board/internal/domain"
 	"github.com/rishabh21g/magic-board/internal/store"
@@ -29,9 +28,8 @@ func (s *Service) ClaimBlock(ctx context.Context, blockID, userID string) (*doma
 		return nil, fmt.Errorf("block %s is already claimed", blockID)
 	}
 	block := &domain.Block{
-		BlockID:   blockID,
-		OwnerID:   userID,
-		Timestamp: time.Now().Unix(),
+		BlockID: blockID,
+		OwnerID: userID,
 	}
 	return block, nil
 }
