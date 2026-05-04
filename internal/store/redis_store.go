@@ -100,6 +100,24 @@ func (r *RedisStore) GetLeaderBoard(ctx context.Context) ([]*domain.LeaderboardE
 	if len(leaderboard) > 5 {
 		leaderboard = leaderboard[:5]
 	}
+
+	ids := make([]string, 0, len(leaderboard))
+	for _, e := range leaderboard {
+		ids = append(ids, e.OwnerID)
+	}
+
+	profiles, err := r.GetUserProfiles(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, e := range leaderboard {
+		if p, ok := profiles[e.OwnerID]; ok && p != nil {
+			e.Username = p.Username
+			e.Color = p.Color
+		}
+	}
+
 	return leaderboard, nil
 }
 

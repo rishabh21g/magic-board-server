@@ -10,8 +10,10 @@ type Block struct {
 }
 
 type LeaderboardEntry struct {
-	OwnerID string `json:"userID"`
-	Count   int    `json:"count"`
+	OwnerID  string `json:"userID"`
+	Count    int    `json:"count"`
+	Username string `json:"username"`
+	Color    string `json:"color"`
 }
 
 type Message struct {
