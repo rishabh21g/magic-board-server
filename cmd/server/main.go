@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"log"
 	"net/http"
 	"time"
@@ -20,6 +21,9 @@ func main() {
 		Addr:     cfg.RedisAddress,
 		Username: cfg.RedisUser,
 		Password: cfg.RedisPassword,
+		TLSConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		},
 	})
 	redisStore := store.NewRedisStore(redisClient)
 
