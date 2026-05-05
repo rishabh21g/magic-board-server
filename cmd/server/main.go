@@ -17,7 +17,9 @@ func main() {
 	cfg := config.LoadConfig()
 	// initialize Redis client and store
 	redisClient := redis.NewClient(&redis.Options{
-		Addr: cfg.RedisAddress,
+		Addr:     cfg.RedisAddress,
+		Username: cfg.RedisUser,
+		Password: cfg.RedisPassword,
 	})
 	redisStore := store.NewRedisStore(redisClient)
 
