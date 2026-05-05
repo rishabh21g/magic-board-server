@@ -1,0 +1,22 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Go build outputs
+bin/
+dist/
+*.exe
+*.out
+*.test
+
+# Coverage
+coverage.out
+
+# OS / editor noise
+.DS_Store
+.vscode/
+.idea/
+
+# Logs
+*.log
